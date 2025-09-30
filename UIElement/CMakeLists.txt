@@ -15,20 +15,21 @@ add_subdirectory(libraries/SDL_TTF EXCLUDE_FROM_ALL)
 add_executable(UIElement
         src/main.cpp
         src/Utils/Size.cpp
-        include/Size.h
+        include/Utils/Size.h
         src/Components/Window.cpp
-        include/Window.h
+        include/Components/Window.h
         src/Utils/Position.cpp
-        include/Position.h
+        include/Utils/Position.h
         src/Utils/Scale.cpp
-        include/Scale.h
+        include/Utils/Scale.h
         src/Components/Rectangle.cpp
-        include/Rectangle.h
+        include/Components/Rectangle.h
         src/Utils/Color.cpp
-        include/Color.h
+        include/Utils/Color.h
         src/Components/Text.cpp
-        include/Text.h
-        src/Components/Text.cpp
+        include/Components/Text.h
+        include/Components/UIElement.h
+        src/Components/UIElement.cpp
 )
 
 target_link_libraries(UIElement PRIVATE SDL3_ttf::SDL3_ttf SDL3::SDL3)

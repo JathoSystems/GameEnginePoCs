@@ -2,7 +2,7 @@
 // Created by jusra on 29-9-2025.
 //
 
-#include "../../include/Position.h"
+#include "../../include/Utils/Position.h"
 
 Position::Position(int x, int y) {
     this->x = x;
@@ -15,4 +15,12 @@ int Position::getX() {
 
 int Position::getY() {
     return y;
+}
+
+void Position::setX(int x) {
+    this->x = x;
+}
+
+void Position::setY(int y) {
+    this->y = y;
 }

@@ -13,8 +13,14 @@ private:
 
 public:
     Size(int width, int height);
+
     int getWidth();
+
+    void setWidth(int width);
+
     int getHeight();
+
+    void setHeight(int height);
 };
 
 

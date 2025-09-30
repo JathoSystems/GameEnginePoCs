@@ -12,6 +12,8 @@ private:
 public:
     Scale(int scale);
     int getScale();
+
+    void setScale(int scale);
 };
 
 

@@ -20,6 +20,12 @@ public:
     int getG();
 
     int getB();
+
+    void setR(int r);
+
+    void setG(int g);
+
+    void setB(int b);
 };
 
 

@@ -2,28 +2,24 @@
 // Created by jusra on 29-9-2025.
 //
 
-#include "../../include/Rectangle.h"
+#include "../../include/Components/Rectangle.h"
 
 #include <SDL3/SDL.h>
 
-#include "../../include/Color.h"
+#include "../../include/Utils/Color.h"
+#include "../../include/Utils/Position.h"
+#include "../../include/Utils/Size.h"
+#include "../../include/Utils/Scale.h"
 
-class Color;
 
-Rectangle::Rectangle(Position *position, Size* size, Scale *scale) {
-    this->_position = position;
-    this->_scale = scale;
-    this->_size = size;
-}
-
-void Rectangle::draw(SDL_Renderer* renderer, Color* color) {
+void Rectangle::render(SDL_Renderer* renderer) {
     if (!renderer) {
         SDL_Log("Renderer kon niet aangemaakt worden: %s", SDL_GetError());
         return;
     }
 
     // Stel kleur in (rood, groen, blauw, alpha)
-    SDL_SetRenderDrawColor(renderer, color->getR(), color->getG(), color->getB(), 255);
+    SDL_SetRenderDrawColor(renderer, _color->getR(), _color->getG(), _color->getB(), 255);
 
     SDL_FRect rect{
         static_cast<float>(_position->getX()),

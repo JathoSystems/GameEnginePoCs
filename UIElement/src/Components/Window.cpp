@@ -2,7 +2,10 @@
 // Created by jusra on 29-9-2025.
 //
 
-#include "../../include/Window.h"
+#include "../../include/Utils/Color.h"
+#include "../../include/Utils/Position.h"
+#include "../../include/Utils/Size.h"
+#include "../../include/Components/Window.h"
 
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_log.h"
