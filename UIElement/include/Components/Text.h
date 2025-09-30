@@ -7,16 +7,19 @@
 #include <string>
 
 #include "UIElement.h"
-#include "../Utils/Color.h"
 #include "SDL3/SDL_render.h"
+#include "SDL3_ttf/SDL_ttf.h"
 
 class Text : public UIElement {
 private:
+    TTF_Font* _font;
     int _fontSize = 30;
     std::string _text;
 
 public:
     Text(std::string text);
+
+    ~Text();
 
     void render(SDL_Renderer *renderer) override;
 

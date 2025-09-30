@@ -13,7 +13,7 @@
 class UIElement {
 protected:
     int _layer = 1;
-    Size *_size = new Size(10, 10);
+    Size *_size = new Size(0, 0);
     Position *_position = new Position(0, 0);
     Scale *_scale = new Scale(1);
     Color *_color = new Color(255, 255, 255);
@@ -25,6 +25,7 @@ public:
         delete _scale;
     }
 
+    virtual void update(float deltaTime) {}
     virtual void render(SDL_Renderer *renderer);
 
     void setLayer(int layer);

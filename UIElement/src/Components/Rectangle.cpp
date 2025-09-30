@@ -11,14 +11,12 @@
 #include "../../include/Utils/Size.h"
 #include "../../include/Utils/Scale.h"
 
-
-void Rectangle::render(SDL_Renderer* renderer) {
+void Rectangle::render(SDL_Renderer *renderer) {
     if (!renderer) {
         SDL_Log("Renderer kon niet aangemaakt worden: %s", SDL_GetError());
         return;
     }
 
-    // Stel kleur in (rood, groen, blauw, alpha)
     SDL_SetRenderDrawColor(renderer, _color->getR(), _color->getG(), _color->getB(), 255);
 
     SDL_FRect rect{
@@ -28,11 +26,5 @@ void Rectangle::render(SDL_Renderer* renderer) {
         (float) _scale->getScale() * _size->getHeight()
     };
 
-    // Teken gevulde rechthoek
     SDL_RenderFillRect(renderer, &rect);
-
-    // Alles tonen
-    SDL_RenderPresent(renderer);
-
-    SDL_DestroyRenderer(renderer);
 }

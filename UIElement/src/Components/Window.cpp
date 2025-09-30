@@ -14,23 +14,49 @@
 void Window::open(std::string title) {
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow(
+    _window = SDL_CreateWindow(
         title.c_str(),
-        640, 480,
+        _size->getWidth(),
+        _size->getHeight(),
         SDL_WINDOW_OPENGL
     );
 
-    if (!window) {
+    if (!_window) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
     }
 }
 
 void Window::close() {
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(_window);
     SDL_Quit();
 }
 
 
 SDL_Window * Window::getSdlWindow() {
-    return window;
+    return _window;
+}
+
+void Window::setSize(int width, int height) {
+    if (!_size) _size = new Size(width, height);
+    else {
+        _size->setWidth(width);
+        _size->setHeight(height);
+    }
+}
+
+Size* Window::getSize() {
+    return _size;
+}
+
+void Window::setColor(int r, int g, int b) {
+    if (!_color) _color = new Color(r, g, b);
+    else {
+        _color->setR(r);
+        _color->setG(g);
+        _color->setB(b);
+    }
+}
+
+Color * Window::getColor() {
+    return _color;
 }

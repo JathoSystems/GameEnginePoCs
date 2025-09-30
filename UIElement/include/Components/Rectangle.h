@@ -10,6 +10,10 @@
 #include "SDL3/SDL_render.h"
 
 class Rectangle : public UIElement {
+private:
+    SDL_Texture *_texture;
+public:
+
     void render(SDL_Renderer* renderer) override;
 };
 

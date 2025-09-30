@@ -11,6 +11,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
 add_subdirectory(libraries/SDL EXCLUDE_FROM_ALL)
 add_subdirectory(libraries/SDL_TTF EXCLUDE_FROM_ALL)
+add_subdirectory(libraries/SDL_image EXCLUDE_FROM_ALL)
 
 add_executable(UIElement
         src/main.cpp
@@ -30,6 +31,10 @@ add_executable(UIElement
         include/Components/Text.h
         include/Components/UIElement.h
         src/Components/UIElement.cpp
+        include/Components/Sprite.h
+        src/Components/Sprite.cpp
+        include/UIElementManager.h
+        src/UIElementManager.cpp
 )
 
-target_link_libraries(UIElement PRIVATE SDL3_ttf::SDL3_ttf SDL3::SDL3)
+target_link_libraries(UIElement PRIVATE SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf SDL3::SDL3)

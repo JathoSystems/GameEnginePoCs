@@ -8,14 +8,22 @@ Text::Text(std::string text) {
     this->_text = text;
 }
 
+Text::~Text() {
+    if (_font) {
+        TTF_CloseFont(_font);
+        _font = nullptr;
+    }
+}
+
 void Text::render(SDL_Renderer* renderer) {
     if (!renderer) return;
 
-    // Open font (één keer kan beter)
-    static TTF_Font* font = TTF_OpenFont("../../assets/fonts/TestFont.ttf", this->_fontSize * _scale->getScale());
-    if (!font) {
-        SDL_Log("Failed to open font: %s", SDL_GetError());
-        return;
+    if (!_font) {
+        _font = TTF_OpenFont("../../assets/fonts/TestFont.ttf", static_cast<float>(_fontSize * _scale->getScale()));
+        if (!_font) {
+            SDL_Log("Failed to open font: %s", SDL_GetError());
+            return;
+        }
     }
 
     SDL_Color sdlColor = { static_cast<Uint8>(_color->getR()),
@@ -23,14 +31,13 @@ void Text::render(SDL_Renderer* renderer) {
                            static_cast<Uint8>(_color->getB()),
                            255 };
 
-    // Render text naar surface (Solid)
-    SDL_Surface* surface = TTF_RenderText_Solid(font, _text.c_str(), 0, sdlColor);
+    // SDL_Surface* surface = TTF_RenderText_Solid(_font, _text.c_str(), 0, sdlColor);
+    SDL_Surface* surface = TTF_RenderText_Solid(_font, _text.c_str(), 0, sdlColor);
     if (!surface) {
         SDL_Log("Failed to render text: %s", SDL_GetError());
         return;
     }
 
-    // Zet surface om naar texture
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     int w = surface->w;
     int h = surface->h;
