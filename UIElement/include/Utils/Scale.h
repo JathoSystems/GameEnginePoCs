@@ -8,12 +8,12 @@
 
 class Scale {
 private:
-    int scale;
+    float scale;
 public:
-    Scale(int scale);
-    int getScale();
+    Scale(float scale);
+    float getScale();
 
-    void setScale(int scale);
+    void setScale(float scale);
 };
 
 

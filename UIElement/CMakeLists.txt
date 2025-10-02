@@ -35,6 +35,11 @@ add_executable(UIElement
         src/Components/Sprite.cpp
         include/UIElementManager.h
         src/UIElementManager.cpp
+        src/Animation/Animation.cpp
+        include/Animation/Animation.h
+        src/Animation/Keyframe.cpp
+        include/Animation/Keyframe.h
+        include/Animation/AnimationType.h
 )
 
 target_link_libraries(UIElement PRIVATE SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf SDL3::SDL3)

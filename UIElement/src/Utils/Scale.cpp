@@ -4,14 +4,14 @@
 
 #include "../../include/Utils/Scale.h"
 
-Scale::Scale(int scale) {
+Scale::Scale(float scale) {
     this->scale = scale;
 }
 
-int Scale::getScale() {
+float Scale::getScale() {
     return scale;
 }
 
-void Scale::setScale(int scale) {
+void Scale::setScale(float scale) {
     this->scale = scale;
 }

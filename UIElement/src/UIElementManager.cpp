@@ -16,6 +16,7 @@ UIElementManager::UIElementManager(Window *window) {
 void UIElementManager::addElement(std::unique_ptr<UIElement> element) {
     _elements.emplace_back(std::move(element));
 
+
     std::sort(_elements.begin(), _elements.end(),
         [](const std::unique_ptr<UIElement>& a, const std::unique_ptr<UIElement>& b) {
             return a->getLayer() < b->getLayer();

@@ -40,7 +40,7 @@ public:
 
     Position *getPosition();
 
-    void setScale(int scale);
+    void setScale(float scale);
 
     Scale *getScale();
 

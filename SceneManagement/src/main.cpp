@@ -51,7 +51,7 @@ int main() {
         manager.openScene(scene.get());
         SDL_RenderPresent(renderer);
 
-        SDL_Delay(16); // ~60 FPS
+        SDL_Delay(16);
     }
 
     SDL_DestroyRenderer(renderer);

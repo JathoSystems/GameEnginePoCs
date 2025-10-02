@@ -44,7 +44,7 @@ Position* UIElement::getPosition() {
     return _position;
 }
 
-void UIElement::setScale(int scale) {
+void UIElement::setScale(float scale) {
     if (!_scale) _scale = new Scale(scale);
     else _scale->setScale(scale);
 }

@@ -4,6 +4,7 @@
 
 #include "../../include/Components/Rectangle.h"
 
+#include <iostream>
 #include <SDL3/SDL.h>
 
 #include "../../include/Utils/Color.h"
@@ -22,8 +23,8 @@ void Rectangle::render(SDL_Renderer *renderer) {
     SDL_FRect rect{
         static_cast<float>(_position->getX()),
         static_cast<float>(_position->getY()),
-        (float) _scale->getScale() * _size->getWidth(),
-        (float) _scale->getScale() * _size->getHeight()
+        _scale->getScale() * _size->getWidth(),
+        _scale->getScale() * _size->getHeight()
     };
 
     SDL_RenderFillRect(renderer, &rect);

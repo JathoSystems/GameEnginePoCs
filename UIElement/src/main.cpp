@@ -3,6 +3,8 @@
 #include "../include/Components/Window.h"
 #include "../include/Components/Rectangle.h"
 #include "../include/Components/Text.h"
+#include "../include/Animation/Keyframe.h"
+#include "../include/Animation/Animation.h"
 
 #include <algorithm>
 #include <SDL3/SDL.h>
@@ -18,7 +20,7 @@ using namespace std;
 
 int main() {
     int windowWidth = 800;
-    int windowHeight = 600;
+    int windowHeight = 450;
 
     auto window = std::make_unique<Window>();
     window->setSize(windowWidth, windowHeight);
@@ -31,6 +33,36 @@ int main() {
     }
 
     UIElementManager manager{window.get()};
+    auto rect = std::make_unique<Rectangle>();
+    rect->setColor(0, 255, 0);
+    rect->setSize(100, 100);
+    rect->setPosition(0, 200);
+
+    Keyframe A;
+    A.setPosition(400, 200);
+    A.setScale(1);
+    A.setColor(0, 0, 255);
+
+    Keyframe B;
+    B.setPosition(650, 200);
+    B.setColor(0, 255, 0);
+
+    Keyframe C;
+    C.setPosition(650, 300);
+    C.setScale(1.5F);
+    C.setColor(255, 0, 0);
+
+    Keyframe D;
+    D.setPosition(400, 300);
+    D.setColor(0, 255, 255);
+
+    auto animationPtr = std::make_unique<Animation>(std::move(rect), AnimationType::LERP);
+    animationPtr->addKeyframe(0, A);
+    animationPtr->addKeyframe(1, B);
+    animationPtr->addKeyframe(2, C);
+    animationPtr->addKeyframe(3, D);
+    animationPtr->addKeyframe(4, A);
+    manager.addElement(std::move(animationPtr));
 
     auto rectangle = std::make_unique<Rectangle>();
     rectangle->setPosition(0, 0);

@@ -24,7 +24,7 @@ public:
     virtual ~Sprite();
 
     bool loadTexture(SDL_Renderer* renderer, int frameWidth = 0, int frameHeight = 0, int totalFrames = 1);
-    virtual void render(SDL_Renderer* renderer) override;
+    void render(SDL_Renderer* renderer) override;
     void update(float deltaTime) override;
 
     void setAnimationSpeed(float speed) { _animationSpeed = speed; }
