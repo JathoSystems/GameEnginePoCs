@@ -19,7 +19,8 @@ void Text::render(SDL_Renderer* renderer) {
     if (!renderer) return;
 
     if (!_font) {
-        _font = TTF_OpenFont("../../assets/fonts/TestFont.ttf", static_cast<float>(_fontSize * _scale->getScale()));
+        std::string fontPath = std::string(ASSET_PATH) + "/fonts/TestFont.ttf";
+        _font = TTF_OpenFont(fontPath.c_str(), static_cast<float>(_fontSize * _scale->getScale()));
         if (!_font) {
             SDL_Log("Failed to open font: %s", SDL_GetError());
             return;

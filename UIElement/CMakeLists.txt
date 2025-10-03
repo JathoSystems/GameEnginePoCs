@@ -42,4 +42,8 @@ add_executable(UIElement
         include/Animation/AnimationType.h
 )
 
+target_compile_definitions(UIElement PRIVATE
+        ASSET_PATH="${CMAKE_SOURCE_DIR}/assets"
+)
+
 target_link_libraries(UIElement PRIVATE SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf SDL3::SDL3)

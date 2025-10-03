@@ -7,6 +7,8 @@
 #include "../include/Animation/Animation.h"
 
 #include <algorithm>
+#include <iostream>
+#include <ostream>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_timer.h>
 
@@ -77,7 +79,9 @@ int main() {
     welcome->setScale(2);
     manager.addElement(std::move(welcome));
 
-    auto sprite = std::make_unique<Sprite>("../../assets/sprites/yellowNinja - attack.png");
+
+    std::string spritePath = std::string(ASSET_PATH) + "/sprites/yellowNinja - attack.png";
+    auto sprite = std::make_unique<Sprite>(spritePath);
     sprite->loadTexture(manager.getRenderer(), 0, 0, 20);
     sprite->setAnimationSpeed(20.0f);
     sprite->setPosition(0, 100);
