@@ -13,5 +13,5 @@ private:
     float x, y;
     float velocityY;
     float width, height;
-    const float gravity = 9.81f;
+    const float gravity = 9.81f * 100;
 };
