@@ -22,7 +22,7 @@ git clone https://github.com/libsdl-org/SDL_image.git SDL_image
 cd SDL_TTF/external
 ./Get-GitModules.ps1
 
-cd ../../SDL_image/external
+cd ../../SDL_image/external 
 ./Get-GitModules.ps1
 
 cd ../../

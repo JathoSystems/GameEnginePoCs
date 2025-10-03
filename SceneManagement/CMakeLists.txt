@@ -15,11 +15,9 @@ add_executable(SceneManagement
         src/main.cpp
         includes/Scenes/FirstScene.h
         src/Scenes/FirstScene.cpp
-        src/Scenes/SecondScene.cpp
         src/Scene.cpp
         src/SceneManager.cpp
-        includes/Scenes/ThirdScene.h
-        src/Scenes/ThirdScene.cpp
+        includes/Camera/Camera.h
 )
 
 target_link_libraries(SceneManagement PRIVATE SDL3::SDL3)

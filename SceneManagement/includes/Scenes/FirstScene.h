@@ -11,7 +11,7 @@
 class FirstScene : public Scene {
 public:
     explicit FirstScene(const std::string& name) : Scene(name) {}
-    void render(SDL_Renderer* renderer) override;
+    void render(SDL_Renderer* renderer, int camX = 0, int camY = 0) override;
 };
 
 #endif //SCENEMANAGEMENT_FIRSTSCENE_H

@@ -40,6 +40,8 @@ add_executable(UIElement
         src/Animation/Keyframe.cpp
         include/Animation/Keyframe.h
         include/Animation/AnimationType.h
+        ../SceneManagement/src/Camera/Camera.cpp
+        ../SceneManagement/includes/Camera/Camera.h
 )
 
 target_compile_definitions(UIElement PRIVATE
