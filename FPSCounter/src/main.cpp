@@ -29,13 +29,12 @@ int main() {
         SDL_Quit();
         return 1;
     }
+    SDL_SetRenderVSync(renderer, 1);
 
     FPSCounter fpsCounter(renderer, FONT_PATH, 24);
 
     bool running = true;
     SDL_Event e;
-
-    const int frameDelay = 1000 / 60; // Ongeveer 60 FPS
 
     while (running) {
         Uint64 frameStart = SDL_GetTicks();
@@ -62,11 +61,6 @@ int main() {
         SDL_RenderPresent(renderer);
 
         fpsCounter.endFrame();
-
-        Uint64 frameTime = SDL_GetTicks() - frameStart;
-        if (frameDelay > frameTime) {
-            SDL_Delay(frameDelay - frameTime);
-        }
     }
 
     SDL_DestroyRenderer(renderer);
