@@ -17,6 +17,10 @@ private:
     Color *_color;
 
 public:
+    ~Window() {
+        delete _size;
+        delete _color;
+    }
     void open(std::string title);
 
     void close();

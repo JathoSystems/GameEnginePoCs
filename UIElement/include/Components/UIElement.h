@@ -23,6 +23,7 @@ public:
         delete _size;
         delete _position;
         delete _scale;
+        delete _color;
     }
 
     virtual void update(float deltaTime) {}

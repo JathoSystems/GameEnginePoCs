@@ -10,7 +10,7 @@ Text::Text(std::string text) {
 
 Text::~Text() {
     if (_font) {
-        TTF_CloseFont(_font);
+        // TTF_CloseFont(_font);
         _font = nullptr;
     }
 }
