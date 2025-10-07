@@ -2,25 +2,44 @@
 // Created by jusra on 1-10-2025.
 //
 
-#ifndef UIELEMENT_SCENEMANAGER_H
-#define UIELEMENT_SCENEMANAGER_H
+#ifndef SCENEMANAGER_H
+#define SCENEMANAGER_H
+
 #include <memory>
 #include <vector>
-#include "Scene.h"
+#include <string>
+#include <SDL3/SDL.h>
+#include "../includes/Scene.h"
+#include "../includes/Camera/Camera.h"
 
 class SceneManager {
 private:
-    std::vector<std::unique_ptr<Scene>> _scenes;
-    SDL_Renderer* _renderer;
+    SDL_Renderer *_renderer;
+    std::vector<std::unique_ptr<Scene> > _scenes;
+    std::unique_ptr<Camera> _camera;
+    int activeScene;
+
 public:
-    SceneManager(SDL_Renderer* renderer);
+    SceneManager(SDL_Renderer *renderer, int viewportWidth = 800, int viewportHeight = 600);
+
     void openScene(Scene *scenePtr);
 
     void addScene(std::unique_ptr<Scene> scene);
 
-    std::vector<std::unique_ptr<Scene>>& getScenes();
+    std::vector<std::unique_ptr<Scene> > &getScenes();
 
-    Scene *getByName(std::string name);
+    void switchScene(std::string sceneName);
+
+    void render();
+
+    void handleInput(const SDL_Event &event);
+
+    void handleKeyboardInput(const bool *keyState);
+
+    Camera *getCamera();
+    void resetCamera();
+
+    std::unique_ptr<Scene> &getCurrentScene();
 };
 
-#endif //UIELEMENT_SCENEMANAGER_H
+#endif // SCENEMANAGER_H

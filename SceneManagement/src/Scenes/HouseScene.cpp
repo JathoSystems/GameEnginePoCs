@@ -2,11 +2,11 @@
 // Created by jusra on 1-10-2025.
 //
 
-#include "../../includes/Scenes/FirstScene.h"
+#include "../../includes/Scenes/HouseScene.h"
 
 #include <SDL3/SDL.h>
 
-void FirstScene::render(SDL_Renderer *renderer, int camX, int camY) {
+void HouseScene::render(SDL_Renderer *renderer, int camX, int camY) {
     // Sky gradient (achtergrond)
     this->drawRectangle(renderer, 135, 206, 235, 0, 0, 1000, 1000, camX, camY);
 

@@ -1,28 +1,45 @@
 //
-// Created by kikker234 on 03-10-2025.
+// Created by jusra on 7-10-2025.
 //
 
-#ifndef UIELEMENT_CAMERA_H
-#define UIELEMENT_CAMERA_H
+#ifndef CAMERA_H
+#define CAMERA_H
 
+#include <SDL3/SDL.h>
 #include "../Scene.h"
 
 class Camera {
 private:
-    int _x = 0, _y = 0; // positie van de camera in de wereld
-    int width = 500, height = 500; // grootte van het viewport
+    int _x, _y;
+    int _speed;
+    int _viewportWidth, _viewportHeight;
 
 public:
-    int getX() const { return _x; }
-    int getY() const { return _y; }
-    void setX(int x) { _x = x; }
-    void setY(int y) { _y = y; }
+    Camera(int viewportWidth, int viewportHeight, int speed = 5);
 
-    void renderScene(Scene* scene, SDL_Renderer* renderer) {
-        // Scene renderen, maar alle coordinates offsetten met _x, _y
-        scene->render(renderer, _x, _y);
-    }
+    void moveLeft();
+
+    void moveRight();
+
+    void moveUp();
+
+    void moveDown();
+
+    void setPosition(int newX, int newY);
+
+    void setSpeed(int newSpeed);
+
+    int getX() const;
+
+    int getY() const;
+
+    void moveTo(int targetX, int targetY, float smoothness = 0.1f);
+
+    void clampToBounds(int minX, int minY, int maxX, int maxY);
+
+    void renderScene(Scene *scene, SDL_Renderer *renderer) const;
+
+    void reset();
 };
 
-
-#endif //UIELEMENT_CAMERA_H
+#endif // CAMERA_H

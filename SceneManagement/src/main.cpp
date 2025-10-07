@@ -1,94 +1,120 @@
-#include <iostream>
 #include <SDL3/SDL.h>
-
+#include <iostream>
+#include <memory>
 #include "../includes/SceneManager.h"
-#include "../includes/Scenes/FirstScene.h"
-#include "../includes/Camera/Camera.h"
+#include "../includes/Scenes/CityScene.h"
+#include "../includes/Scenes/HouseScene.h"
 
-int main() {
-    std::cout << "[INFO] Applicatie gestart" << std::endl;
+int main(int argc, char* argv[]) {
+    const int WINDOW_WIDTH = 800;
+    const int WINDOW_HEIGHT = 600;
 
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        std::cerr << "[ERROR] SDL initialisatie mislukt: " << SDL_GetError() << std::endl;
-        return 1;
-    }
-    std::cout << "[INFO] SDL geïnitialiseerd" << std::endl;
-
-    SDL_Window *window = SDL_CreateWindow(
-        "Scene management",
-        500,
-        500,
-        SDL_WINDOW_OPENGL);
-
+    SDL_Window* window = SDL_CreateWindow(
+        "Scene Viewer with Camera",
+        WINDOW_WIDTH, WINDOW_HEIGHT,
+        SDL_WINDOW_RESIZABLE
+    );
     if (!window) {
-        std::cerr << "[ERROR] Window aanmaken mislukt: " << SDL_GetError() << std::endl;
+        std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return 1;
     }
-    std::cout << "[INFO] Window aangemaakt (500x500)" << std::endl;
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, nullptr);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
-        std::cerr << "[ERROR] Renderer aanmaken mislukt: " << SDL_GetError() << std::endl;
+        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
-    std::cout << "[INFO] Renderer aangemaakt" << std::endl;
 
-    FirstScene* scene = new FirstScene(" First scene");
-    std::cout << "[INFO] Scene geladen: First scene" << std::endl;
+    SceneManager sceneManager(renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    std::unique_ptr<HouseScene> houseScene = std::make_unique<HouseScene>("House Scene");
+    houseScene->addButton(10, 10, 100, 40, [&sceneManager]() {
+        sceneManager.resetCamera();
+    }, {0, 255, 0, 255});
+
+    houseScene->addButton(10, 60, 100, 40, [&sceneManager]() {
+        sceneManager.switchScene("City Scene");
+    }, {255, 0, 0, 255});
+
+    std::unique_ptr<CityScene> cityScene = std::make_unique<CityScene>("City Scene");
+    cityScene->addButton(10, 10, 100, 40, [&sceneManager]() {
+        sceneManager.resetCamera();
+    }, {0, 255, 0, 255});
+
+    cityScene->addButton(10, 60, 100, 40, [&sceneManager]() {
+        sceneManager.switchScene("House Scene");
+    }, {255, 0, 0, 255});
+
+    sceneManager.addScene(std::move(cityScene));
+    sceneManager.addScene(std::move(houseScene));
+
 
     bool running = true;
-    SDL_Event e;
+    SDL_Event event;
 
-    int currentScene = 0;
+    std::cout << "=== Controls ===" << std::endl;
+    std::cout << "WASD or Arrow Keys: Move camera" << std::endl;
+    std::cout << "Hold Shift: Move faster" << std::endl;
+    std::cout << "R: Reset camera position" << std::endl;
+    std::cout << "Click buttons for actions:" << std::endl;
+    std::cout << "- Green button:\t\treset camera" << std::endl;
+    std::cout << "- Red button:\t\tswitch scenes" << std::endl;
+    std::cout << "================" << std::endl;
 
-    // Camera
-    Camera camera;
-    std::cout << "[INFO] Camera geïnitialiseerd" << std::endl;
-    std::cout << "[INFO] Game loop gestart. Druk op ESC of sluit het venster om af te sluiten." << std::endl;
-
+    // Main game loop
     while (running) {
-        // Event handling
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_EVENT_QUIT) {
-                std::cout << "[INFO] Quit event ontvangen" << std::endl;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) {
                 running = false;
+                continue;
             }
-            if (e.type == SDL_EVENT_KEY_DOWN) {
-                if (e.key.key == SDLK_ESCAPE) {
-                    std::cout << "[INFO] ESC gedrukt - applicatie wordt afgesloten" << std::endl;
-                    running = false;
+
+            sceneManager.handleInput(event);
+
+            Scene* currentScene = nullptr;
+            if (!sceneManager.getScenes().empty()) {
+                currentScene = sceneManager.getCurrentScene().get();
+                if (currentScene) {
+                    switch (event.type) {
+                        case SDL_EVENT_MOUSE_MOTION:
+                            currentScene->handleMouseMove(event.motion.x, event.motion.y);
+                            break;
+                        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                            if (event.button.button == SDL_BUTTON_LEFT) {
+                                currentScene->handleMouseClick(event.button.x, event.button.y);
+                            }
+                            break;
+                    }
                 }
             }
         }
 
-        // Verwerken input
-        const bool* keys = SDL_GetKeyboardState(NULL);
-        if (keys[SDL_SCANCODE_LEFT])  camera.setX(camera.getX() - 1);
-        if (keys[SDL_SCANCODE_RIGHT]) camera.setX(camera.getX() + 1);
-        if (keys[SDL_SCANCODE_UP])    camera.setY(camera.getY() - 1);
-        if (keys[SDL_SCANCODE_DOWN])  camera.setY(camera.getY() + 1);
+        const bool* keyState = SDL_GetKeyboardState(nullptr);
+        sceneManager.handleKeyboardInput(keyState);
 
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
-        camera.renderScene(scene, renderer);
+
+        Scene* currentScene = nullptr;
+        if (!sceneManager.getScenes().empty()) {
+            currentScene = sceneManager.getCurrentScene().get();
+        }
+        if (currentScene) {
+            sceneManager.render();
+            currentScene->renderButtons(renderer);
+        }
+
         SDL_RenderPresent(renderer);
+
+        SDL_Delay(16);
     }
 
-    std::cout << "[INFO] Opruimen resources..." << std::endl;
-    delete scene;
-    std::cout << "[INFO] Scene verwijderd" << std::endl;
-
     SDL_DestroyRenderer(renderer);
-    std::cout << "[INFO] Renderer vernietigd" << std::endl;
-
     SDL_DestroyWindow(window);
-    std::cout << "[INFO] Window vernietigd" << std::endl;
-
     SDL_Quit();
-    std::cout << "[INFO] SDL afgesloten" << std::endl;
-    std::cout << "[INFO] Applicatie beëindigd" << std::endl;
 
     return 0;
 }

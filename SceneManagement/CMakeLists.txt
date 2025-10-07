@@ -13,11 +13,15 @@ add_subdirectory(libraries/SDL EXCLUDE_FROM_ALL)
 
 add_executable(SceneManagement
         src/main.cpp
-        includes/Scenes/FirstScene.h
-        src/Scenes/FirstScene.cpp
+        includes/Scenes/HouseScene.h
+        src/Scenes/HouseScene.cpp
         src/Scene.cpp
         src/SceneManager.cpp
         includes/Camera/Camera.h
+        src/Scenes/CityScene.cpp
+        includes/Element/Button.h
+        src/Element/Button.cpp
+        src/Camera/Camera.cpp
 )
 
 target_link_libraries(SceneManagement PRIVATE SDL3::SDL3)

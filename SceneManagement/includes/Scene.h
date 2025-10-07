@@ -7,30 +7,43 @@
 
 #include <memory>
 #include <string>
+#include <functional>
+#include <vector>
 #include <SDL3/SDL.h>
+
+#include "Element/Button.h"
 
 class Scene {
 private:
     std::string name;
+    std::vector<Button> buttons;
 
 public:
-    Scene(std::string name) : name(name) {}
+    Scene(std::string name) : name(name) {
+    }
+
     virtual ~Scene() = default;
 
     void openScene(SDL_Renderer *renderer);
+
     std::string getName();
 
-    virtual void render(SDL_Renderer* renderer, int camX = 0, int camY = 0) = 0;
+    virtual void render(SDL_Renderer *renderer, int camX = 0, int camY = 0) = 0;
 
-    void drawRectangle(SDL_Renderer* renderer, int r, int g, int b, int x, int y, int width, int height, int camX = 0, int camY = 0) {
-        SDL_FRect rect;  // Changed to SDL_FRect for SDL3
-        rect.x = x - camX; // offset van camera aftrekken
-        rect.y = y - camY;
-        rect.w = width;
-        rect.h = height;
-        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-        SDL_RenderFillRect(renderer, &rect);  // Already using pointer with &
-    }
+    void drawRectangle(SDL_Renderer *renderer, int r, int g, int b, int x, int y, int width, int height, int camX = 0,
+                       int camY = 0);
+
+    void addButton(int x, int y, int width, int height,
+                   std::function<void()> onClick,
+                   SDL_Color bgColor = {100, 100, 100, 255});
+
+    void renderButtons(SDL_Renderer *renderer);
+
+    void handleMouseMove(int mouseX, int mouseY);
+
+    void handleMouseClick(int mouseX, int mouseY);
+
+    void clearButtons();
 };
 
 #endif //UIELEMENT_SCENE_H
