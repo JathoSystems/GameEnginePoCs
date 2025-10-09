@@ -2,9 +2,10 @@
 #include <string>
 #include "AudioEngine.h"
 
-// Convenience loader that produces DecodedAudio for WAV and MP3.
-namespace Sound {
-    // Returns true on success.
-    bool loadWAV(const std::string& path, DecodedAudio& out);
-    bool loadMP3(const std::string& path, DecodedAudio& out);
+namespace AudioLoader {
+    bool loadWavFile(const std::string& filePath, DecodedAudio& decodedOutput);
+    bool loadMp3File(const std::string& filePath, DecodedAudio& decodedOutput);
+
+    // Convenience function to load any supported format
+    bool loadAudioFile(const std::string& filePath, DecodedAudio& decodedOutput);
 }

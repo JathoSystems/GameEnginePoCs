@@ -7,20 +7,42 @@
 
 class AudioMixer {
 public:
+    static constexpr int DEFAULT_FREQUENCY = 48000;
+    static constexpr int DEFAULT_CHANNELS = 2;
+    static constexpr SDL_AudioFormat DEFAULT_FORMAT = SDL_AUDIO_F32;
+
     AudioMixer() = default;
     ~AudioMixer();
 
-    bool init(int freq = 48000, SDL_AudioFormat fmt = SDL_AUDIO_F32, int channels = 2);
+    bool initialize(
+        int frequency = DEFAULT_FREQUENCY,
+        SDL_AudioFormat format = DEFAULT_FORMAT,
+        int channels = DEFAULT_CHANNELS
+    );
+
     void shutdown();
 
-    bool loadSound(int key, const std::string& path);            // wav/mp3/etc.
-    MIX_Track* play(int key, float volume01 = 1.0f);             // overlay okay
+    bool loadAudioFile(int soundKey, const std::string& filePath);
+    MIX_Track* playSound(int soundKey, float volume = 1.0f);
 
-    void setTrackVolume(MIX_Track* track, float volume01);       // per instance
-    void setMasterVolume(float volume01);                        // mixer-wide
+    void setTrackVolume(MIX_Track* track, float volume);
+    void setMasterVolume(float volume);
+
+    bool hasSound(int soundKey) const;
+    size_t getActiveTrackCount() const { return m_activeTracks.size(); }
 
 private:
     MIX_Mixer* m_mixer = nullptr;
-    std::unordered_map<int, MIX_Audio*> m_audio;                 // cached
-    std::vector<MIX_Track*> m_tracks;                            // optional
+    std::unordered_map<int, MIX_Audio*> m_loadedAudio;
+    std::vector<MIX_Track*> m_activeTracks;
+
+    static constexpr float MIN_VOLUME = 0.0f;
+    static constexpr float MAX_VOLUME = 1.0f;
+
+    static float clampVolume(float volume) {
+        return std::clamp(volume, MIN_VOLUME, MAX_VOLUME);
+    }
+
+    void cleanupResources();
+    bool initializeSDLAudio(int frequency, SDL_AudioFormat format, int channels);
 };

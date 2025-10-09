@@ -6,138 +6,185 @@
 #define SDL_AUDIO_USES_F32 1
 #endif
 
+namespace {
+    constexpr int16_t MIN_INT16_VALUE = -32768;
+    constexpr int16_t MAX_INT16_VALUE = 32767;
+}
+
 AudioEngine::AudioEngine() = default;
-AudioEngine::~AudioEngine() { shutdown(); }
 
-bool AudioEngine::init(int freq, SDL_AudioFormat fmt, int channels) {
+AudioEngine::~AudioEngine() {
+    shutdown();
+}
+
+bool AudioEngine::initialize(int frequency, SDL_AudioFormat format, int channels) {
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
-        SDL_Log("SDL audio init failed: %s", SDL_GetError());
+        SDL_Log("Failed to initialize SDL audio subsystem: %s", SDL_GetError());
         return false;
     }
 
-    SDL_AudioSpec desired{};
-    desired.freq = freq;
-    desired.format = fmt;        // SDL_AUDIO_F32 (float) is a great default
-    desired.channels = (Uint8)channels;
+    SDL_AudioSpec desiredSpec{};
+    desiredSpec.freq = frequency;
+    desiredSpec.format = format;
+    desiredSpec.channels = static_cast<Uint8>(channels);
 
-    // Open default playback device in paused state (streams can resume it)
-    m_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desired);
-    if (!m_device) {
-        SDL_Log("OpenAudioDevice failed: %s", SDL_GetError());
+    m_audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &desiredSpec);
+    if (!m_audioDevice) {
+        SDL_Log("Failed to open audio device: %s", SDL_GetError());
         return false;
     }
-    m_deviceSpec = desired;
-    SDL_ResumeAudioDevice(m_device);
+
+    m_deviceSpec = desiredSpec;
+    SDL_ResumeAudioDevice(m_audioDevice);
     return true;
 }
 
 void AudioEngine::shutdown() {
-    for (auto& p : m_streams) {
-        if (p && p->stream) SDL_DestroyAudioStream(p->stream);
+    for (auto& streamPtr : m_activeStreams) {
+        if (streamPtr && streamPtr->stream) {
+            SDL_DestroyAudioStream(streamPtr->stream);
+        }
     }
-    m_streams.clear();
-    if (m_device) {
-        SDL_CloseAudioDevice(m_device);
-        m_device = 0;
+    m_activeStreams.clear();
+
+    if (m_audioDevice) {
+        SDL_CloseAudioDevice(m_audioDevice);
+        m_audioDevice = 0;
     }
+
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
-bool AudioEngine::setNativeGain(SDL_AudioStream* s, float gain) {
-    // SDL3 has SDL_SetAudioStreamGain(). If present, use it; otherwise return false.
-    // We avoid a hard link-time requirement by just calling it directly; if your SDL3 is recent, it will exist.
-    // If not, comment this out and always return false to use software scaling.
+bool AudioEngine::setNativeStreamGain(SDL_AudioStream* stream, float gain) {
 #if defined(SDL_VERSION_ATLEAST)
-    // Assume available; if your headers are old, remove this block and fallback.
-    if (SDL_SetAudioStreamGain(s, gain)) {
-        return true;
-    }
+    return SDL_SetAudioStreamGain(stream, gain);
 #else
-    (void)s; (void)gain;
-#endif
+    (void)stream;
+    (void)gain;
     return false;
+#endif
 }
 
-int AudioEngine::play(const DecodedAudio& audio, float volume) {
-    if (!m_device) return -1;
-
-    // Create a stream bound to our playback device, with conversion as needed.
-    SDL_AudioStream* stream = SDL_OpenAudioDeviceStream(
-        m_device,
-        &audio.spec,    // source format
-        nullptr,        // no callback
-        nullptr
-    );
-    if (!stream) {
-        SDL_Log("OpenAudioDeviceStream failed: %s", SDL_GetError());
+int AudioEngine::playAudio(const DecodedAudio& audio, float volume) {
+    if (!m_audioDevice) {
         return -1;
     }
 
-    // Volume handling
-    auto handle = std::make_unique<PlayingStream>();
-    handle->stream = stream;
-    handle->volume = std::clamp(volume * m_master, 0.0f, 1.0f);
-    handle->usesNativeGain = setNativeGain(stream, handle->volume);
+    SDL_AudioStream* sdlStream = SDL_OpenAudioDeviceStream(
+        m_audioDevice,
+        &audio.spec,
+        nullptr,
+        nullptr
+    );
 
-    // If no native gain, scale the PCM before queuing
-    const uint8_t* src = audio.pcm.data();
-    const size_t   len = audio.pcm.size();
-
-    if (handle->usesNativeGain) {
-        SDL_PutAudioStreamData(stream, src, (int)len);
-    } else {
-        // software gain: copy & scale into temporary buffer (float32 only; else convert in a pinch)
-        if (audio.spec.format == SDL_AUDIO_F32) {
-            std::vector<uint8_t> scaled(len);
-            const float* in  = reinterpret_cast<const float*>(src);
-            float*       out = reinterpret_cast<float*>(scaled.data());
-            size_t frames = len / sizeof(float);
-            for (size_t i = 0; i < frames; ++i) {
-                out[i] = in[i] * handle->volume;
-            }
-            SDL_PutAudioStreamData(stream, scaled.data(), (int)scaled.size());
-        } else if (audio.spec.format == SDL_AUDIO_S16) {
-            std::vector<int16_t> scaled(len / sizeof(int16_t));
-            const int16_t* in = reinterpret_cast<const int16_t*>(src);
-            for (size_t i = 0; i < scaled.size(); ++i) {
-                int v = int(in[i] * handle->volume);
-                v = std::clamp(v, -32768, 32767);
-                scaled[i] = (int16_t)v;
-            }
-            SDL_PutAudioStreamData(stream, scaled.data(), (int)(scaled.size()*sizeof(int16_t)));
-        } else {
-            // Fallback: just push unscaled (volume 1.0)
-            SDL_PutAudioStreamData(stream, src, (int)len);
-        }
+    if (!sdlStream) {
+        SDL_Log("Failed to create audio stream: %s", SDL_GetError());
+        return -1;
     }
 
-    SDL_FlushAudioStream(stream);
-    SDL_ResumeAudioStreamDevice(stream);
+    auto audioStream = std::make_unique<AudioStream>();
+    audioStream->stream = sdlStream;
+    audioStream->volume = clampVolume(volume);
+    audioStream->supportsNativeGain = setNativeStreamGain(sdlStream, audioStream->volume * m_masterVolume);
 
-    // Save and return index
-    m_streams.push_back(std::move(handle));
-    return (int)m_streams.size() - 1;
+    const float effectiveVolume = audioStream->volume * m_masterVolume;
+    processAudioData(audio, audioStream.get(), effectiveVolume);
+
+    SDL_FlushAudioStream(sdlStream);
+    SDL_ResumeAudioStreamDevice(sdlStream);
+
+    m_activeStreams.push_back(std::move(audioStream));
+    return static_cast<int>(m_activeStreams.size() - 1);
 }
 
-void AudioEngine::setStreamVolume(int handle, float volume) {
-    if (!isValid(handle)) return;
-    volume = std::clamp(volume, 0.0f, 1.0f);
-    auto& s = m_streams[handle];
-    s->volume = volume;
+void AudioEngine::processAudioData(
+    const DecodedAudio& audio,
+    AudioStream* audioStream,
+    float effectiveVolume
+) {
+    const uint8_t* sourceData = audio.pcmData.data();
+    const size_t dataSize = audio.pcmData.size();
 
-    if (s->usesNativeGain) {
-        setNativeGain(s->stream, volume);
-    } else {
-        // No native gain; for simplicity we won’t rescale in-flight data here.
-        // Next play() will use the updated master *or set per-stream again.
-        // Optionally: we could pause, drain, and requeue scaled audio.
+    if (audioStream->supportsNativeGain) {
+        SDL_PutAudioStreamData(audioStream->stream, sourceData, static_cast<int>(dataSize));
+        return;
+    }
+
+    std::vector<uint8_t> scaledBuffer;
+
+    switch (audio.spec.format) {
+        case SDL_AUDIO_F32:
+            scaleFloatAudio(sourceData, dataSize, effectiveVolume, scaledBuffer);
+            break;
+        case SDL_AUDIO_S16:
+            scaleInt16Audio(sourceData, dataSize, effectiveVolume, scaledBuffer);
+            break;
+        default:
+            SDL_PutAudioStreamData(audioStream->stream, sourceData, static_cast<int>(dataSize));
+            return;
+    }
+
+    SDL_PutAudioStreamData(audioStream->stream, scaledBuffer.data(), static_cast<int>(scaledBuffer.size()));
+}
+
+void AudioEngine::scaleFloatAudio(
+    const uint8_t* sourceData,
+    size_t dataSize,
+    float volume,
+    std::vector<uint8_t>& outputBuffer
+) {
+    outputBuffer.resize(dataSize);
+
+    const float* inputSamples = reinterpret_cast<const float*>(sourceData);
+    float* outputSamples = reinterpret_cast<float*>(outputBuffer.data());
+    const size_t sampleCount = dataSize / sizeof(float);
+
+    for (size_t i = 0; i < sampleCount; ++i) {
+        outputSamples[i] = inputSamples[i] * volume;
+    }
+}
+
+void AudioEngine::scaleInt16Audio(
+    const uint8_t* sourceData,
+    size_t dataSize,
+    float volume,
+    std::vector<uint8_t>& outputBuffer
+) {
+    const size_t sampleCount = dataSize / sizeof(int16_t);
+    outputBuffer.resize(dataSize);
+
+    const int16_t* inputSamples = reinterpret_cast<const int16_t*>(sourceData);
+    int16_t* outputSamples = reinterpret_cast<int16_t*>(outputBuffer.data());
+
+    for (size_t i = 0; i < sampleCount; ++i) {
+        const int scaledValue = static_cast<int>(inputSamples[i] * volume);
+        outputSamples[i] = static_cast<int16_t>(std::clamp(scaledValue,
+                                                           static_cast<int>(MIN_INT16_VALUE),
+                                                           static_cast<int>(MAX_INT16_VALUE)));
+    }
+}
+
+void AudioEngine::setStreamVolume(int streamHandle, float volume) {
+    if (!isStreamValid(streamHandle)) {
+        return;
+    }
+
+    const float clampedVolume = clampVolume(volume);
+    auto& audioStream = m_activeStreams[streamHandle];
+    audioStream->volume = clampedVolume;
+
+    if (audioStream->supportsNativeGain) {
+        setNativeStreamGain(audioStream->stream, clampedVolume * m_masterVolume);
     }
 }
 
 void AudioEngine::setMasterVolume(float volume) {
-    m_master = std::clamp(volume, 0.0f, 1.0f);
+    m_masterVolume = clampVolume(volume);
 }
 
-bool AudioEngine::isValid(int handle) const {
-    return handle >= 0 && handle < (int)m_streams.size() && m_streams[handle] && m_streams[handle]->stream;
+bool AudioEngine::isStreamValid(int streamHandle) const {
+    return streamHandle >= 0 &&
+           streamHandle < static_cast<int>(m_activeStreams.size()) &&
+           m_activeStreams[streamHandle] &&
+           m_activeStreams[streamHandle]->stream;
 }

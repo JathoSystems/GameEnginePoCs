@@ -1,108 +1,144 @@
 #include "AudioMixer.h"
 #include <algorithm>
 
-static float clamp01(float v){ return std::max(0.0f, std::min(1.0f, v)); }
+AudioMixer::~AudioMixer() {
+    shutdown();
+}
 
-AudioMixer::~AudioMixer() { shutdown(); }
-
-bool AudioMixer::init(int freq, SDL_AudioFormat fmt, int channels) {
-    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
-        SDL_Log("SDL audio init failed: %s", SDL_GetError());
-        return false;
-    }
-    if (!MIX_Init()) { // SDL3_mixer init
-        SDL_Log("MIX_Init failed: %s", SDL_GetError());
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+bool AudioMixer::initialize(int frequency, SDL_AudioFormat format, int channels) {
+    if (!initializeSDLAudio(frequency, format, channels)) {
         return false;
     }
 
-    SDL_AudioSpec hint{};
-    hint.freq = freq;
-    hint.format = fmt;
-    hint.channels = (Uint8)channels;
+    SDL_AudioSpec audioHint{};
+    audioHint.freq = frequency;
+    audioHint.format = format;
+    audioHint.channels = static_cast<Uint8>(channels);
 
-    m_mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &hint);
+    m_mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audioHint);
     if (!m_mixer) {
-        SDL_Log("MIX_CreateMixerDevice failed: %s", SDL_GetError());
+        SDL_Log("Failed to create mixer device: %s", SDL_GetError());
         MIX_Quit();
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
         return false;
     }
 
-    // No MIX_ResumeMixerDevice in SDL3_mixer; mixer is ready after creation.
+    return true;
+}
+
+bool AudioMixer::initializeSDLAudio(int frequency, SDL_AudioFormat format, int channels) {
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+        SDL_Log("Failed to initialize SDL audio subsystem: %s", SDL_GetError());
+        return false;
+    }
+
+    if (!MIX_Init()) {
+        SDL_Log("Failed to initialize SDL_mixer: %s", SDL_GetError());
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        return false;
+    }
+
     return true;
 }
 
 void AudioMixer::shutdown() {
-    // stop/destroy any tracks
-    for (auto* t : m_tracks) {
-        if (t) MIX_DestroyTrack(t); // stops immediately and frees the track
-    }
-    m_tracks.clear();
-
-    // free cached audio
-    for (auto& kv : m_audio) {
-        if (kv.second) MIX_DestroyAudio(kv.second);
-    }
-    m_audio.clear();
+    cleanupResources();
 
     if (m_mixer) {
         MIX_DestroyMixer(m_mixer);
         m_mixer = nullptr;
     }
+
     MIX_Quit();
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
-bool AudioMixer::loadSound(int key, const std::string& path) {
-    if (!m_mixer) return false;
+void AudioMixer::cleanupResources() {
+    for (MIX_Track* track : m_activeTracks) {
+        if (track) {
+            MIX_DestroyTrack(track);
+        }
+    }
+    m_activeTracks.clear();
 
-    // SDL3_mixer: pass mixer + predecode flag (true = fully uncompress to PCM once)
-    MIX_Audio* a = MIX_LoadAudio(m_mixer, path.c_str(), /*predecode=*/false);
-    if (!a) {
-        SDL_Log("MIX_LoadAudio failed for %s: %s", path.c_str(), SDL_GetError());
+    for (auto& [key, audio] : m_loadedAudio) {
+        if (audio) {
+            MIX_DestroyAudio(audio);
+        }
+    }
+    m_loadedAudio.clear();
+}
+
+bool AudioMixer::loadAudioFile(int soundKey, const std::string& filePath) {
+    if (!m_mixer) {
+        SDL_Log("Mixer not initialized");
         return false;
     }
-    // replace if existed
-    if (auto it = m_audio.find(key); it != m_audio.end()) {
-        MIX_DestroyAudio(it->second);
+
+    MIX_Audio* audioData = MIX_LoadAudio(m_mixer, filePath.c_str(), false);
+    if (!audioData) {
+        SDL_Log("Failed to load audio file '%s': %s", filePath.c_str(), SDL_GetError());
+        return false;
     }
-    m_audio[key] = a;
+
+    // Clean up existing audio if key already exists
+    auto existingAudio = m_loadedAudio.find(soundKey);
+    if (existingAudio != m_loadedAudio.end()) {
+        MIX_DestroyAudio(existingAudio->second);
+    }
+
+    m_loadedAudio[soundKey] = audioData;
     return true;
 }
 
-MIX_Track* AudioMixer::play(int key, float volume01) {
-    if (!m_mixer) return nullptr;
-    auto it = m_audio.find(key);
-    if (it == m_audio.end()) return nullptr;
+MIX_Track* AudioMixer::playSound(int soundKey, float volume) {
+    if (!m_mixer) {
+        SDL_Log("Mixer not initialized");
+        return nullptr;
+    }
+
+    auto audioIterator = m_loadedAudio.find(soundKey);
+    if (audioIterator == m_loadedAudio.end()) {
+        SDL_Log("Sound key %d not found", soundKey);
+        return nullptr;
+    }
 
     MIX_Track* track = MIX_CreateTrack(m_mixer);
     if (!track) {
-        SDL_Log("MIX_CreateTrack failed: %s", SDL_GetError());
+        SDL_Log("Failed to create audio track: %s", SDL_GetError());
         return nullptr;
     }
-    if (!MIX_SetTrackAudio(track, it->second)) {
-        SDL_Log("MIX_SetTrackAudio failed: %s", SDL_GetError());
+
+    if (!MIX_SetTrackAudio(track, audioIterator->second)) {
+        SDL_Log("Failed to set track audio: %s", SDL_GetError());
         MIX_DestroyTrack(track);
         return nullptr;
     }
 
-    MIX_SetTrackGain(track, clamp01(volume01)); // per-instance volume
+    MIX_SetTrackGain(track, clampVolume(volume));
 
-    if (!MIX_PlayTrack(track, /*options=*/0)) {
-        SDL_Log("MIX_PlayTrack failed: %s", SDL_GetError());
+    if (!MIX_PlayTrack(track, 0)) {
+        SDL_Log("Failed to play track: %s", SDL_GetError());
         MIX_DestroyTrack(track);
         return nullptr;
     }
 
-    m_tracks.push_back(track);
+    m_activeTracks.push_back(track);
     return track;
 }
 
-void AudioMixer::setTrackVolume(MIX_Track* track, float volume01) {
-    if (track) MIX_SetTrackGain(track, clamp01(volume01));
+void AudioMixer::setTrackVolume(MIX_Track* track, float volume) {
+    if (track) {
+        MIX_SetTrackGain(track, clampVolume(volume));
+    }
 }
 
-void AudioMixer::setMasterVolume(float volume01) {
-    if (m_mixer) MIX_SetMasterGain(m_mixer, clamp01(volume01));
+void AudioMixer::setMasterVolume(float volume) {
+    if (m_mixer) {
+        MIX_SetMasterGain(m_mixer, clampVolume(volume));
+    }
+}
+
+bool AudioMixer::hasSound(int soundKey) const {
+    return m_loadedAudio.find(soundKey) != m_loadedAudio.end();
 }
