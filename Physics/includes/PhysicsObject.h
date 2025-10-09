@@ -3,25 +3,27 @@
 #include <box2d/box2d.h>
 #include "Physics.h"
 
-// A drawable wrapper around a Box2D body (axis-aligned box)
 class PhysicsObject {
 public:
-    PhysicsObject(Physics& physics, float x, float y, float width, float height, bool dynamic = true);
+    PhysicsObject(
+        PhysicsWorld& physicsWorld,
+        float topLeftX, float topLeftY,
+        float width, float height,
+        bool isDynamic = true
+    );
 
-    // No per-object update needed (world steps in Physics::step), but keep for symmetry
-    void update(float /*dt*/) {}
+    void update(float deltaTime) { (void)deltaTime; }
 
     void render(SDL_Renderer* renderer) const;
 
-    // Reset to a starting pose (zero velocity)
-    void reset(float x, float y);
+    void resetPosition(float topLeftX, float topLeftY);
 
-    b2Body* body() { return _body; }
+    b2Body* getBody() { return m_physicsBody; }
+    const b2Body* getBody() const { return m_physicsBody; }
 
 private:
-    Physics& _physics;
-    b2Body* _body = nullptr;
-
-    // Store for rendering (in pixels)
-    float _w, _h;
+    PhysicsWorld& m_physicsWorld;
+    b2Body* m_physicsBody = nullptr;
+    float m_width;
+    float m_height;
 };

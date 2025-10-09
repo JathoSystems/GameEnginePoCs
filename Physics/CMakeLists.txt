@@ -34,6 +34,7 @@ add_executable(PhysicsPoC
         src/main.cpp
         src/Physics.cpp
         src/PhysicsObject.cpp
+        src/PlayerController.cpp
 )
 
 target_link_libraries(PhysicsPoC PRIVATE SDL3::SDL3 box2d)
