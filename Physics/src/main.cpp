@@ -162,7 +162,7 @@ int main(int, char**) {
         fixture->SetDensity(BOX_DENSITY);
     }
     pushableBox.getBody()->ResetMassData();
-    pushableBox.getBody()->SetFixedRotation(true);
+    pushableBox.getBody()->SetFixedRotation(false);
     pushableBox.getBody()->SetLinearDamping(BOX_LINEAR_DAMPING);
     pushableBox.getBody()->SetAngularDamping(BOX_ANGULAR_DAMPING);
 
